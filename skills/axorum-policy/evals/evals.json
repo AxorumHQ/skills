@@ -1,0 +1,133 @@
+{
+  "skill_name": "axorum-policy",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I want our AP agent to pay vendors but not go crazy.",
+      "expected_output": "No draft yet. The first reply asks one question in finance words (no rule, aggregate, priority, delegation or modality vocabulary): the vague-ask menu as a multi-select of at most four options (one payment too big, too much to one vendor over a period, too much paid out in total per day or month, a vendor not on the list), then the habits (too many too fast, the same bill paid twice, no receipt afterwards), each with a recommended default that leaves out the per-vendor limit and the duplicate-bill guard and says, in plain words, that either needs every vendor listed first, a payment to an unlisted vendor then being stopped with no record. Later turns ask one question at a time with two to four options and a labelled default, show the changed control-brief lines after each answer, confirm the whole brief before drafting, collect examples as cases, and only then write policy.axp, world.yaml and cases.json. check.py --world exits 0; try_cases.py exits 0; the read-back leads each item with the user's words, then quotes the engine's rendering for its rule, labelled, without the checker's 'Rule N' and priority, with clock-beats translated to days.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Marketing has a $10,000 budget for the launch. Two agents spend it: one buys ads, one books travel. Travel receipts have to be in within three days.",
+      "expected_output": "Guided questions, one per turn, that draw out: how the $10,000 splits between the two agents (or whether both share it), whether any of it stays in reserve, who answers for each agent, whether each receipt must name the booking it is for and carry its amount (recommended, so one receipt answers for one booking; every booking opens its own duty either way), and what follows a missed receipt. The draft puts the budget and any per-agent budgets in world.yaml as mandates, reads the team budget with projected(...) for a reserve, gives each agent its own delegation, and writes the receipt duty with a trigger, a capture of trigger_transaction, within(259200) commented as three days, and a permit for the receipt action. The brief maps every item to a rule or a world object marked (world). Before drafting the receipt duty, the assistant says that a receipt the budgeted agent files the usual way charges its budget a second time, and offers a separate records agent with no budget filing it (recommended), recording it without moving money between accounts (with what that costs the books), or leaving it. Cases cover both sides of every limit, a receipt met with fulfills, and a clock advance past three days showing the breach. check.py --world exits 0; try_cases.py exits 0.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I run three purchasing agents for our AP team and want them under an Axorum policy. They may only pay vendors on our approved list. No vendor may receive more than $10,000 a month across all three agents combined. And any purchase over $2,500 needs a receipt filed within one business day.",
+      "expected_output": "Most of the brief is given, so questions are few: whether a vendor exactly at $10,000 is allowed, whether 'a month' means any rolling 30 days or each fixed 30-day block (the language has no calendar month), and that 'one business day' cannot be said exactly (an X item offering one day, 86,400 seconds, or three days). The draft declares a party per agent, all three in one role with the shared rules written for that role (never two agents bound to one party), and has permits for paying and for filing receipts, an approved-vendor refusal, an aggregate summing posted debit per counterparty(payee), which counts all three agents together, over rolling or calendar 2592000, with its cost said before drafting (every vendor imported first; a vendor the list has never heard of is rejected before any rule answers, cause unknown_counterparty, with nothing recorded), a refusal on projected(...) above amount(1000000, USD), and a receipt duty above amount(250000, USD) that captures trigger_transaction. Every number has its dollar or day meaning in a comment; times are in seconds (no 250 ms beats). check.py exits 0 and the reply quotes the engine's rendering.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Our collections agent may only take money from customers we have approved. When we take a payment we owe delivery within 3 business days, and if we miss that we refund within 5 business days. Meridian has an MSA at a flat $1,000 and the agent must not be able to misstate that.",
+      "expected_output": "Questions on what is not given, then a draft with: permits for collecting, delivering and refunding, all in the agent's delegation; a refusal on customers not approved on the list; a Meridian rule that refuses a collection whose money that actually moves is not exactly $1,000.00 (reading posted amounts, not the stated amount); a delivery duty triggered by the collection with within(259200) and on_violation naming a refund duty with within(432000), its captures naming the original collection. Business days are reported as not expressible, with calendar days offered. The read-back says what deny-by-default refuses that the brief did not mention. check.py exits 0.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Raise the single payment cap to $7,500. Everything else stays the same.",
+      "expected_output": "Reads the existing policy.axp, world.yaml and cases.json first and treats the request as a revision: keeps every other rule and the brief numbering, changes only B3 (single_payment_cap to amount(750000, USD) with its comment and header line updated), asks whether $7,500.00 itself is allowed, updates the cases on both sides of the new figure and any running totals they change, re-runs check.py --world (exit 0) and try_cases.py (exit 0), reads back the changed item with the engine's new rendering, and does not push unless asked.",
+      "files": [
+        "examples/ap-vendor-payments/policy.axp",
+        "examples/ap-vendor-payments/world.yaml",
+        "examples/ap-vendor-payments/cases.json"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "The policy checks and the cases pass. Put it live in my sandbox.",
+      "expected_output": "Confirms the read-back was confirmed and the cases pass, then runs <skill-dir>/scripts/push.py policy.axp --dry-run against the user's sandbox (default http://127.0.0.1:7340), which checks the policy against the world that sandbox is running and lists which running totals keep their figures and which start again at zero; tells the user, and asks before going on when a total starts again. Then pushes without --dry-run and reports the change (the policy in force, and how far into the run). Never starts, stops or restarts the user's sandbox: when nothing answers (exit 2) it asks the user to start theirs. A policy the running world cannot run or the sandbox refuses (exit 3) is reported with the reason, and nothing is changed.",
+      "files": [
+        "examples/ap-vendor-payments/policy.axp",
+        "examples/ap-vendor-payments/world.yaml",
+        "examples/ap-vendor-payments/cases.json"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "help me write an axorum policy for an agent that buys API calls",
+      "expected_output": "Targeted questions in business language, one at a time, starting with the vague-ask menu or who answers for the agent; or, when no one can answer, a draft whose defaults are listed as brief items marked (assumed), the whole marked as a proposal, which passes check.py with a permit, an approved-vendor refusal and a spend cap. Short reply with no construct names or minor-unit arithmetic.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "My AP agent tried to pay Shady LLC $6,000 and the sandbox says vendor_must_be_approved refused it. I expected the $5,000 cap to be the reason. Is the policy wrong?",
+      "expected_output": "Does not edit the policy first. Reads the engine's account of the refused intent from the user's sandbox (the activity report for its transaction id, then the explain report's text). Explains that both refusals apply to that payment at the same priority, that the record names only one of them, and that the tie is settled by an id derived from each rule's name, not by the order the rules are written or alphabetically; the payment is refused either way. Offers, and asks before making, the change that records the cap as the reason (single_payment_cap at a higher priority, then check and cases again), and suggests cases that try each limit where the other is clear.",
+      "files": [
+        "examples/ap-vendor-payments/policy.axp",
+        "examples/ap-vendor-payments/world.yaml",
+        "examples/ap-vendor-payments/cases.json"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "As ap_bot, submit a $50 purchase to acme-supplies through the Axorum API and tell me whether it was allowed.",
+      "expected_output": "This skill does not apply: the request is to act as an agent, not to write or change a policy. The `axorum` skill (or the SDK) handles it. No policy file is read, drafted, checked or pushed.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "Draft our AP agent's Axorum policy now, I'm boarding and can't answer questions. Only approved vendors, nothing over $5,000 in one payment, and no vendor gets more than $15,000 in any 30 days.",
+      "expected_output": "No questions: the user is not there, so the draft is a proposal, every control taken by default marked (assumed) and the other assumptions listed as A items, in the header comment and the reply. The asked-for per-vendor limit is drafted, since an explicit request wins: an aggregate summing posted debit per counterparty(payee) over rolling 2592000 and a refusal on projected(...) above amount(1500000, USD), beside the approved-vendor refusal and the cap on posted debit above amount(500000, USD). The read-back states its cost as a decision the user made: a vendor missing from the imported vendor list is turned away as unknown_counterparty before any rule answers, with nothing recorded, so every vendor must be imported first (an A item). No duplicate-bill guard is drafted, since none was asked for. check.py exits 0 and the reply quotes the engine's rendering.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "Tell me about Axorum policies: what can they do?",
+      "expected_output": "A short answer in plain words, from the skill's references: a policy permits and forbids an agent's actions (anything else is refused by default, and every refusal is recorded with its reason), caps spending and counts through running totals and the world's budgets, and creates duties. On duties it is exact: each allowed trigger (a purchase over a line) opens a duty of its own; the duty is met only by an intent that names its id in `fulfills`, never by an action that merely matches; an open duty ends met or breached at its deadline, and the breach can open a follow-up; nothing waives a duty. It offers to draft one, starting with the first question. No repository path, crate, module or file is named.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "Our buyer agent made two purchases over $500 before filing any receipt. How many receipt duties are open, and what can one receipt discharge?",
+      "expected_output": "Two duties, one per purchase, each with its own id; nothing merges them. A receipt meets exactly the duties it lists in `fulfills` (at most 64), all or none: if any listed duty is not open, not this agent's, owes other parameters or is past its deadline, the receipt is rejected `invalid_fulfillment` and nothing is recorded. Without captures (the purchase-receipts starter's bare `file_receipt()`), one receipt may list both and meet both. With the recommended captures (the purchase's amount and transaction), each duty owes its own purchase's transaction, so listing both is rejected and each purchase needs its own receipt. An amount-only capture is weaker: one receipt meets both duties whenever the two amounts agree (two $600.00 purchases), and is rejected when they differ. A receipt that lists none meets none, and both duties are breached at their deadlines. Offers to show it with cases (a `fulfills` list in try_cases.py).",
+      "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "The agent filed the receipt but the duty was still recorded as missed. Why?",
+      "expected_output": "Explains that filing the owed action alone never meets a duty: the receipt must name the duty's id in `fulfills`, from the agent that is to perform it, with the captured values, at or before the deadline. Asks for or reads the receipt's transaction and its explain report: `duties_discharged` empty with a plain `permitted` verdict means it named no duty; a `forbidden_by_rule` or `denied_by_default` refusal means the receipt itself was refused, so it met nothing; a 422 `invalid_fulfillment` means a named id failed a check and nothing was recorded. Suggests the fix for the cause found and a case that files the receipt with `fulfills`.",
+      "files": [
+        "examples/team-budget/policy.axp",
+        "examples/team-budget/world.yaml",
+        "examples/team-budget/cases.json"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "If I push a policy that removes the receipt rule, what happens to receipts already owed?",
+      "expected_output": "The duties already open stay open under the policy that opened them, with their deadlines and follow-ups. New purchases open none. The receipts are judged by the policy pushed: if it still permits filing a receipt, the agent can still meet each open duty; if the permit is gone too, each receipt is refused (`denied_by_default`) and the duty is breached at its deadline. Says this before pushing, and offers to keep the receipt permit until the open duties are met.",
+      "files": [
+        "examples/team-budget/policy.axp",
+        "examples/team-budget/world.yaml",
+        "examples/team-budget/cases.json"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "My receipt named a stale duty id but came back refused forbidden_by_rule, not invalid_fulfillment. Why?",
+      "expected_output": "The policy judges the intent first; `fulfills` is checked only on an intent the policy allows. A refused receipt is recorded as that refusal, whatever it names, and meets no duty. So a rule forbids filing this receipt: name it, then fix that rule or its priority, and only then does a stale id show up as `invalid_fulfillment`.",
+      "files": []
+    },
+    {
+      "id": 15,
+      "prompt": "Can I waive a receipt duty for one purchase?",
+      "expected_output": "No: nothing waives, suspends or cancels an open duty; it ends met or breached. To keep a duty from opening, narrow its `when` (a higher threshold, a payee the duty skips) or give it an `unless` for the exception; a duty already open is met by filing the receipt, or recorded as missed. Offers the change as a brief item, with cases on both sides.",
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "How does Axorum determine who an agent is?",
+      "expected_output": "An answer from references/world.md only. An agent is named by its `agent://` URI. The world binds that URI to a party, which gives it its roles, its budget and its capabilities, and the policy's rules and delegations for that party then apply. Every intent carries a token for that URI, signed by the issuer the world trusts for it (in a sandbox, `axorum-sandbox token` mints one from the world). Before any rule runs, an unbound URI is turned away (`401 unknown_agent`), and a token that was not signed by the issuer the world trusts for that agent, was minted for another agent, has expired, or does not carry the capability for the action is refused (`403 attestation`); neither is recorded. Two agents bound to two parties keep separate limits, duties and records. Names no repository path, crate, module, file or line, and does not read or search source code, even when the working directory is a checkout of the Axorum repository.",
+      "files": []
+    },
+    {
+      "id": 17,
+      "prompt": "Which function in the Axorum engine decides whether a receipt discharges a duty? Show me the file and line.",
+      "expected_output": "Does not read, search or cite source code, specs or repository files, even when the working directory holds them, and names no internal file, crate, module or line. Says the skill answers from its references and the sandbox, then gives the behavior from references/semantics.md section 3: the receipt names the duty's id in `fulfills`, and every duty named must be open, the agent's to perform, owe exactly that action with its captured values, and be within its deadline, or the whole intent is rejected `invalid_fulfillment`; a refused receipt meets nothing. Offers to show it in a sandbox with cases.",
+      "files": []
+    }
+  ]
+}

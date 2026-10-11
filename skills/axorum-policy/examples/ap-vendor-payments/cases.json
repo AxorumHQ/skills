@@ -1,0 +1,204 @@
+{
+  "world": "world.yaml",
+  "policy": "policy.axp",
+  "agents": {
+    "ap_bot": "agent://example.com/agent/ap_01h455vb4pex5vsknk084sn02q"
+  },
+  "cases": [
+    {
+      "case": "pay Acme $120 for supplies",
+      "brief": "B1",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "120.00 USD",
+        "payee": "acme-supplies"
+      },
+      "expect": "allowed",
+      "because": "permit_payment"
+    },
+    {
+      "case": "pay Shady LLC, on the list but not approved",
+      "brief": "B2",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "50.00 USD",
+        "payee": "shady-llc"
+      },
+      "expect": "refused",
+      "because": "vendor_must_be_approved"
+    },
+    {
+      "case": "pay a vendor the list has never heard of",
+      "brief": "B2",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "50.00 USD",
+        "payee": "fly-by-night"
+      },
+      "expect": "rejected",
+      "because": "unknown_counterparty"
+    },
+    {
+      "case": "pay Acme $6,000 in one payment",
+      "brief": "B3",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "6000.00 USD",
+        "payee": "acme-supplies"
+      },
+      "expect": "refused",
+      "because": "single_payment_cap"
+    },
+    {
+      "case": "pay Northgate the $8,500 rent",
+      "brief": "B3",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "8500.00 USD",
+        "payee": "northgate-properties"
+      },
+      "expect": "allowed",
+      "because": "permit_payment",
+      "duties": [
+        "receipt_for_large_payment"
+      ]
+    },
+    {
+      "case": "pay Northgate $8,500.01, a cent over the rent",
+      "brief": "B3",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "8500.01 USD",
+        "payee": "northgate-properties"
+      },
+      "expect": "refused",
+      "because": "single_payment_cap"
+    },
+    {
+      "case": "pay Acme $3,000",
+      "brief": "B6",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "3000.00 USD",
+        "payee": "acme-supplies"
+      },
+      "expect": "allowed",
+      "because": "permit_payment",
+      "duties": [
+        "receipt_for_large_payment"
+      ]
+    },
+    {
+      "case": "file the receipt for the $3,000 Acme payment",
+      "brief": "B6",
+      "as": "ap_bot",
+      "fulfills": "pay Acme $3,000",
+      "legs": [
+        {
+          "debit": "acc_74kyk4x754bx0abqg32ccevf0q",
+          "amount": "3000.00 USD"
+        },
+        {
+          "credit": "acc_0jffxpndb9a2garx5fj166tc4c",
+          "amount": "3000.00 USD"
+        }
+      ],
+      "expect": "allowed",
+      "because": "permit_receipt"
+    },
+    {
+      "case": "a day and an hour pass with the rent receipt unfiled",
+      "brief": "B6",
+      "advance": "1d1h",
+      "breached": [
+        "pay Northgate the $8,500 rent"
+      ]
+    },
+    {
+      "case": "pay Acme $2,400",
+      "brief": "B4",
+      "repeat": 6,
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "2400.00 USD",
+        "payee": "acme-supplies"
+      },
+      "expect": "allowed",
+      "because": "permit_payment"
+    },
+    {
+      "case": "pay Acme $2,400 as acme, the alias on its record",
+      "brief": "B2",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "2400.00 USD",
+        "payee": "acme"
+      },
+      "expect": "allowed",
+      "because": "permit_payment"
+    },
+    {
+      "case": "pay Acme $80, landing exactly on $20,000 in 30 days",
+      "brief": "B4",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "80.00 USD",
+        "payee": "acme-supplies"
+      },
+      "expect": "allowed",
+      "because": "permit_payment"
+    },
+    {
+      "case": "pay Acme one more cent",
+      "brief": "B4",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "0.01 USD",
+        "payee": "acme-supplies"
+      },
+      "expect": "refused",
+      "because": "vendor_30_day_cap"
+    },
+    {
+      "case": "two hours pass",
+      "brief": "B5",
+      "advance": "2h"
+    },
+    {
+      "case": "pay Northgate $10",
+      "brief": "B5",
+      "repeat": 10,
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "10.00 USD",
+        "payee": "northgate-properties"
+      },
+      "expect": "allowed",
+      "because": "permit_payment"
+    },
+    {
+      "case": "an eleventh payment inside the hour",
+      "brief": "B5",
+      "as": "ap_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "10.00 USD",
+        "payee": "northgate-properties"
+      },
+      "expect": "refused",
+      "because": "hourly_pace"
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+// Accounts payable: the AP agent pays approved vendors inside limits the
+// controller set, and files a receipt for every large payment.
+//
+// Brief, and the rules that carry it out:
+//   B1  The AP agent may pay vendors.                      permit_payment
+//   B2  Only vendors approved on the vendor list are paid. vendor_must_be_approved
+//   B3  No single payment over $5,000.00, except the rent  single_payment_cap
+//       to Northgate Properties, up to $8,500.00.          (unless rent)
+//   B4  No vendor receives more than $20,000.00 in any     vendor_30_day_cap
+//       30 days.
+//   B5  At most 10 payments in any hour.                   hourly_pace
+//   B6  A payment over $2,500.00 needs its receipt filed   receipt_for_large_payment,
+//       within one day.                                    permit_receipt
+//
+// Anything no rule above allows is refused: the engine denies by default.
+// Times are in seconds: one day is 86,400, thirty days 2,592,000.
+policy {
+  role ap_clerk
+
+  action purchase(amount: amount, payee: text)
+  action file_receipt(amount: amount, purchase: transaction)
+
+  party ap_bot agent roles(ap_clerk)
+  party controller principal
+
+  delegation ap_grant {
+    principal controller
+    agent ap_bot
+    scope { actions(purchase, file_receipt) roles(ap_clerk) }
+  }
+
+  // What each vendor was paid over the last 30 days (2,592,000 seconds).
+  aggregate paid_per_vendor sums posted debit USD purchase per counterparty(payee) over rolling 2592000
+  // How many payments the agent made in the last hour (3,600 seconds).
+  aggregate payments_last_hour counts purchase per party over rolling 3600
+
+  // B1: the AP agent may pay a vendor. Every refusal below outranks this.
+  rule permit_payment {
+    permitted any_in_role(ap_clerk) do purchase
+    priority 1
+  }
+
+  // B2: a vendor the vendor list does not mark approved is refused.
+  rule vendor_must_be_approved {
+    forbidden any_in_role(ap_clerk) do purchase
+    when { ( not param(payee) in approved counterparties ) }
+    priority 10
+  }
+
+  // B3: a payment that moves more than $5,000.00 is refused, unless it is
+  // the rent to Northgate Properties, which moves at most $8,500.00.
+  rule single_payment_cap {
+    forbidden any_in_role(ap_clerk) do purchase
+    when { ( posted debit USD > amount(500000, USD) ) }
+    unless rent {
+      ( param(payee) == text("northgate-properties") )
+      and ( posted debit USD <= amount(850000, USD) )
+    }
+    priority 10
+  }
+
+  // B4: the payment that would take a vendor past $20,000.00 in 30 days is
+  // refused. Landing exactly on $20,000.00 is allowed.
+  rule vendor_30_day_cap {
+    forbidden any_in_role(ap_clerk) do purchase
+    when { ( projected(register(paid_per_vendor)) > amount(2000000, USD) ) }
+    priority 10
+  }
+
+  // B5: the eleventh payment inside an hour is refused.
+  rule hourly_pace {
+    forbidden any_in_role(ap_clerk) do purchase
+    when { ( projected(register(payments_last_hour)) > int(10) ) }
+    priority 10
+  }
+
+  // B6: a payment that moves more than $2,500.00 opens a duty to file its
+  // receipt within one day (86,400 seconds). The receipt names the payment
+  // it is for, so one receipt never clears another payment's duty.
+  rule receipt_for_large_payment {
+    obligated any_in_role(ap_clerk) do file_receipt
+    trigger purchase
+    capture { amount: trigger_param(amount), purchase: trigger_transaction }
+    when { ( posted debit USD > amount(250000, USD) ) }
+    within(86400)
+    priority 5
+  }
+
+  // B6: the AP agent may file a receipt, so the duty above can be met.
+  rule permit_receipt {
+    permitted any_in_role(ap_clerk) do file_receipt
+    priority 1
+  }
+}

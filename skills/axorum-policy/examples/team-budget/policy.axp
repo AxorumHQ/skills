@@ -1,0 +1,120 @@
+// Marketing campaign: two agents share a $10,000.00 team budget. The ads
+// agent may spend up to $7,000.00 of it and the travel agent up to $4,000.00;
+// each travel booking needs its receipt within three days, filed by a records
+// agent that holds no budget, so the paperwork never counts as spending.
+//
+// Brief, and what carries it out:
+//   B1  Both agents may spend for the campaign.            permit_spend
+//   B2  The ads agent spends at most $7,000.00.            ads_mandate (world)
+//   B3  The travel agent spends at most $4,000.00.         travel_mandate (world)
+//   B4  Together they spend at most $10,000.00.            team_budget (world),
+//                                                          keep_reserve (see below)
+//   B5  Keep $500.00 of the team budget in reserve.        keep_reserve
+//   B6  No single trip over $1,500.00.                     travel_trip_cap
+//   B7  A travel booking needs its receipt within three    receipt_for_travel,
+//       days.                                              permit_receipt
+//   B8  A receipt still missing then is reported within    report_missing_receipt,
+//       one more day.                                      permit_report
+//   B9  The records agent, which holds no budget, files    records_grant,
+//       the receipts and reports; the travel agent only    performed_by in
+//       books.                                             B7 and B8
+//
+// Anything no rule above allows is refused: the engine denies by default.
+// The three budgets are mandates the world opens; the policy reads only
+// team_budget, by name. A spend past the $10,000.00 team budget is refused by
+// keep_reserve, $500.00 below it, before team_budget can refuse it: a rule's
+// refusal wins over a mandate's, so B4's case names keep_reserve, and
+// team_budget refuses only a spend no rule refuses. Times are in seconds: one
+// day is 86,400.
+policy {
+  role marketing
+  role records
+
+  action purchase(amount: amount, payee: text)
+  action file_receipt(amount: amount, purchase: transaction)
+  action report_missing_receipt(amount: amount, purchase: transaction)
+
+  party ads_bot agent roles(marketing)
+  party travel_bot agent roles(marketing)
+  party records_bot agent roles(records)
+  party marketing_lead principal
+
+  delegation ads_grant {
+    principal marketing_lead
+    agent ads_bot
+    scope { actions(purchase) roles(marketing) }
+  }
+
+  delegation travel_grant {
+    principal marketing_lead
+    agent travel_bot
+    scope { actions(purchase) roles(marketing) }
+  }
+
+  // B9: the records agent may only file paperwork. The world binds it to no
+  // mandate, so moving a booking into receipted expenses charges no budget.
+  delegation records_grant {
+    principal marketing_lead
+    agent records_bot
+    scope { actions(file_receipt, report_missing_receipt) roles(records) }
+  }
+
+  // B1: either agent may spend. Its own mandate and the team budget still
+  // cap it (B2 to B4), and every refusal below outranks this.
+  rule permit_spend {
+    permitted any_in_role(marketing) do purchase
+    priority 1
+  }
+
+  // B5: the spend that would leave less than $500.00 of the $10,000.00 team
+  // budget is refused, whichever agent makes it.
+  rule keep_reserve {
+    forbidden any_in_role(marketing) do purchase
+    when { ( projected(team_budget) > amount(950000, USD) ) }
+    priority 10
+  }
+
+  // B6: a travel booking that moves more than $1,500.00 is refused.
+  rule travel_trip_cap {
+    forbidden specific(travel_bot) do purchase
+    when { ( posted debit USD > amount(150000, USD) ) }
+    priority 10
+  }
+
+  // B7, B9: every travel booking opens a duty to file its receipt within
+  // three days (259,200 seconds). The receipt names the booking it is for.
+  // The duty is the travel agent's; the records agent performs it.
+  rule receipt_for_travel {
+    obligated specific(travel_bot) do file_receipt
+    trigger purchase
+    capture { amount: trigger_param(amount), purchase: trigger_transaction }
+    performed_by specific(records_bot)
+    within(259200)
+    on_violation report_missing_receipt
+    priority 5
+  }
+
+  // B8, B9: a receipt still missing after three days must be reported
+  // within one more day (86,400 seconds), naming the same booking. The
+  // records agent performs it too.
+  rule report_missing_receipt {
+    obligated specific(travel_bot) do report_missing_receipt
+    capture { amount: trigger_param(amount), purchase: trigger_transaction }
+    performed_by specific(records_bot)
+    within(86400)
+    priority 5
+  }
+
+  // B7: the records agent may file a receipt, so the duty can be met.
+  rule permit_receipt {
+    permitted specific(records_bot) do file_receipt
+    priority 1
+  }
+
+  // B8: the records agent may report a missing receipt, so that duty can be
+  // met.
+  rule permit_report {
+    permitted specific(records_bot) do report_missing_receipt
+    priority 1
+  }
+}

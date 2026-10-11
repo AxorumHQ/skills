@@ -1,0 +1,194 @@
+{
+  "world": "world.yaml",
+  "policy": "policy.axp",
+  "agents": {
+    "ads_bot": "agent://example.com/agent/ads_01h455vb4pex5vsknk084sn02q",
+    "travel_bot": "agent://example.com/agent/travel_01h455vb4pex5vsknk084sn02q",
+    "records_bot": "agent://example.com/agent/records_01h455vb4pex5vsknk084sn02q"
+  },
+  "cases": [
+    {
+      "case": "ads buys $3,000 of search ads",
+      "brief": "B1",
+      "as": "ads_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "3000.00 USD",
+        "payee": "search-ads"
+      },
+      "expect": "allowed",
+      "because": "permit_spend"
+    },
+    {
+      "case": "ads buys $4,500 more, past its $7,000",
+      "brief": "B2",
+      "as": "ads_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "4500.00 USD",
+        "payee": "search-ads"
+      },
+      "expect": "refused",
+      "because": "ads_mandate"
+    },
+    {
+      "case": "travel books a $1,200 flight",
+      "brief": "B7",
+      "as": "travel_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "1200.00 USD",
+        "payee": "airline"
+      },
+      "expect": "allowed",
+      "because": "permit_spend",
+      "duties": [
+        "receipt_for_travel"
+      ]
+    },
+    {
+      "case": "travel books an $1,800 hotel",
+      "brief": "B6",
+      "as": "travel_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "1800.00 USD",
+        "payee": "hotel"
+      },
+      "expect": "refused",
+      "because": "travel_trip_cap"
+    },
+    {
+      "case": "travel books a $1,400 hotel",
+      "brief": "B7",
+      "as": "travel_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "1400.00 USD",
+        "payee": "hotel"
+      },
+      "expect": "allowed",
+      "because": "permit_spend",
+      "duties": [
+        "receipt_for_travel"
+      ]
+    },
+    {
+      "case": "travel books $1,500 more, past its $4,000",
+      "brief": "B3",
+      "as": "travel_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "1500.00 USD",
+        "payee": "airline"
+      },
+      "expect": "refused",
+      "because": "travel_mandate"
+    },
+    {
+      "case": "ads buys $3,500 more",
+      "brief": "B2",
+      "as": "ads_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "3500.00 USD",
+        "payee": "social-ads"
+      },
+      "expect": "allowed",
+      "because": "permit_spend"
+    },
+    {
+      "case": "travel spends $500, into the reserve",
+      "brief": "B5",
+      "as": "travel_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "500.00 USD",
+        "payee": "taxi"
+      },
+      "expect": "refused",
+      "because": "keep_reserve"
+    },
+    {
+      "case": "ads spends $400, leaving exactly $500",
+      "brief": "B5",
+      "as": "ads_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "400.00 USD",
+        "payee": "social-ads"
+      },
+      "expect": "allowed",
+      "because": "permit_spend"
+    },
+    {
+      "case": "travel spends $1,000, past the team's $10,000",
+      "brief": "B4",
+      "as": "travel_bot",
+      "do": "purchase",
+      "with": {
+        "amount": "1000.00 USD",
+        "payee": "airline"
+      },
+      "expect": "refused",
+      "because": "keep_reserve"
+    },
+    {
+      "case": "travel tries to file the flight's receipt itself",
+      "brief": "B9",
+      "as": "travel_bot",
+      "fulfills": "travel books a $1,200 flight",
+      "legs": [
+        {
+          "debit": "acc_74kyk4x754bx0abqg32ccevf0q",
+          "amount": "1200.00 USD"
+        },
+        {
+          "credit": "acc_0jffxpndb9a2garx5fj166tc4c",
+          "amount": "1200.00 USD"
+        }
+      ],
+      "expect": "rejected",
+      "because": "attestation"
+    },
+    {
+      "case": "the records agent files the flight's receipt",
+      "brief": "B7",
+      "as": "records_bot",
+      "fulfills": "travel books a $1,200 flight",
+      "legs": [
+        {
+          "debit": "acc_74kyk4x754bx0abqg32ccevf0q",
+          "amount": "1200.00 USD"
+        },
+        {
+          "credit": "acc_0jffxpndb9a2garx5fj166tc4c",
+          "amount": "1200.00 USD"
+        }
+      ],
+      "expect": "allowed",
+      "because": "permit_receipt"
+    },
+    {
+      "case": "three days and an hour pass",
+      "brief": "B8",
+      "advance": "3d1h",
+      "breached": [
+        "travel books a $1,400 hotel"
+      ],
+      "follow_ups": [
+        "report_missing_receipt"
+      ]
+    },
+    {
+      "case": "the records agent reports the hotel's missing receipt",
+      "brief": "B8",
+      "as": "records_bot",
+      "fulfills": "travel books a $1,400 hotel",
+      "do": "report_missing_receipt",
+      "legs": "memo",
+      "expect": "allowed",
+      "because": "permit_report"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+// Two agents spending from one team budget, keeping a reserve. This policy is
+// the world's to run, not the subject of this example: the axorum-policy
+// skill writes and proves policies.
+policy {
+  role buyer
+
+  action purchase(amount: amount, payee: text)
+
+  party research_bot agent roles(buyer)
+  party ads_bot agent roles(buyer)
+  party marketing_lead principal
+
+  delegation research_grant {
+    principal marketing_lead
+    agent research_bot
+    scope { actions(purchase) roles(buyer) }
+  }
+
+  delegation ads_grant {
+    principal marketing_lead
+    agent ads_bot
+    scope { actions(purchase) roles(buyer) }
+  }
+
+  // A buyer pays vendors the vendor list approves.
+  rule pay_approved_vendors {
+    permitted any_in_role(buyer) do purchase
+    when { ( param(payee) in approved counterparties ) }
+    priority 1
+  }
+
+  // Keep $1,000.00 of the $10,000.00 team budget in reserve.
+  rule keep_a_reserve {
+    forbidden any_in_role(buyer) do purchase
+    when { ( projected(team_budget) > amount(900000, USD) ) }
+    priority 10
+  }
+}

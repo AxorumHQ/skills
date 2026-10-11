@@ -1,0 +1,23 @@
+{
+  "name": "axorum",
+  "description": "Skills for working with Axorum: authoring policies, building sandbox worlds, and acting as an agent under an Axorum ledger.",
+  "owner": {
+    "name": "Axorum, Inc.",
+    "url": "https://axorum.com"
+  },
+  "plugins": [
+    {
+      "name": "axorum",
+      "source": "./",
+      "description": "Three skills: axorum-policy (write and prove a policy), axorum-world (build a sandbox world), and axorum (judgment for agents that move money through an Axorum ledger).",
+      "version": "0.3.0",
+      "author": {
+        "name": "Axorum, Inc.",
+        "url": "https://axorum.com"
+      },
+      "homepage": "https://axorum.com/docs/sandbox",
+      "license": "Apache-2.0",
+      "keywords": ["axorum", "policy", "sandbox", "agents", "payments"]
+    }
+  ]
+}

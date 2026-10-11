@@ -1,0 +1,53 @@
+version: axorum.sandbox-world.v1
+world: ap-vendor-payments
+description: >-
+  The AP agent paying vendors from the controller's vendor list, in USD, with
+  the policy beside this file in force.
+seed: 1
+policy:
+  file: policy.axp
+currencies:
+- currency: USD
+  exponent: 2
+# A purchase debits spend and credits payables (the default chart's USD
+# accounts). A receipt moves the payment from spend into receipted expenses;
+# the agent holds no mandate, so that charges nothing.
+accounts:
+- account: acc_0jffxpndb9a2garx5fj166tc4c
+  currency: USD
+  label: Agent spend (USD)
+  owner: party_6ps6y8mc3tb628qrr6xpqkr0yr
+- account: acc_118q65km28a9zrw0dbexkpd43v
+  currency: USD
+  label: Agent payables (USD)
+  owner: party_6ps6y8mc3tb628qrr6xpqkr0yr
+- account: acc_74kyk4x754bx0abqg32ccevf0q
+  currency: USD
+  label: Receipted expenses (USD)
+  owner: party_6ps6y8mc3tb628qrr6xpqkr0yr
+parties:
+# ap_bot in the policy: the party id is the one the name ap_bot derives.
+- agent: agent://example.com/agent/ap_01h455vb4pex5vsknk084sn02q
+  party: party_6ps6y8mc3tb628qrr6xpqkr0yr
+  roles:
+  - ap_clerk
+  capabilities:
+  - purchase
+  - file_receipt
+# The controller's vendor list. A payee missing from it cannot be tracked
+# per vendor, so its payment is turned away before it is judged.
+master_data:
+- Counterparties:
+    source_version: vendors-2100-01
+    entries:
+    - - acme-supplies
+      - display_name: Acme Supplies
+        approved: true
+        aliases:
+        - acme
+    - - northgate-properties
+      - display_name: Northgate Properties
+        approved: true
+    - - shady-llc
+      - display_name: Shady LLC
+        approved: false

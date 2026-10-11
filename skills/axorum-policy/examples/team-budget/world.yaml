@@ -1,0 +1,68 @@
+version: axorum.sandbox-world.v1
+world: team-budget
+description: >-
+  Two marketing agents spending under their own mandates, both carved from a
+  $10,000.00 team budget, with the policy beside this file in force.
+seed: 1
+policy:
+  file: policy.axp
+currencies:
+- currency: USD
+  exponent: 2
+# A purchase debits spend and credits payables (the default chart's USD
+# accounts). The records agent files a receipt by moving the booking from
+# spend into receipted expenses; it holds no mandate, so that charges nothing.
+# A report of a missing receipt moves no money between accounts: it posts a
+# debit and a credit on spend.
+accounts:
+- account: acc_0jffxpndb9a2garx5fj166tc4c
+  currency: USD
+  label: Agent spend (USD)
+- account: acc_118q65km28a9zrw0dbexkpd43v
+  currency: USD
+  label: Agent payables (USD)
+- account: acc_74kyk4x754bx0abqg32ccevf0q
+  currency: USD
+  label: Receipted expenses (USD)
+# team_budget first, then the two mandates carved from it. Each id is the one
+# its name derives; the policy reads team_budget by that id.
+mandates:
+- mandate: mand_4rcxqt8kd3bc99kr06a57h4kxx
+  currency: USD
+  ceiling: 1000000
+  label: team_budget
+- mandate: mand_60mys3wfeebmptzjresxs7z855
+  currency: USD
+  ceiling: 700000
+  parent: mand_4rcxqt8kd3bc99kr06a57h4kxx
+  label: ads_mandate
+- mandate: mand_6wkh0mjsd6bcc87ypbrckczs1k
+  currency: USD
+  ceiling: 400000
+  parent: mand_4rcxqt8kd3bc99kr06a57h4kxx
+  label: travel_mandate
+parties:
+# ads_bot, travel_bot and records_bot in the policy: each party id is the one
+# its name derives, so its delegation and the rules naming it reach it.
+# records_bot names no mandate: nothing it posts is charged to a budget.
+- agent: agent://example.com/agent/ads_01h455vb4pex5vsknk084sn02q
+  party: party_7cky9f0ahdafma6d3hxkcb8s0g
+  roles:
+  - marketing
+  mandate: mand_60mys3wfeebmptzjresxs7z855
+  capabilities:
+  - purchase
+- agent: agent://example.com/agent/travel_01h455vb4pex5vsknk084sn02q
+  party: party_609cfcv7p8ab99dfs5hpvjfgc5
+  roles:
+  - marketing
+  mandate: mand_6wkh0mjsd6bcc87ypbrckczs1k
+  capabilities:
+  - purchase
+- agent: agent://example.com/agent/records_01h455vb4pex5vsknk084sn02q
+  party: party_4shwkt5p02bw794a5xj7meb7mq
+  roles:
+  - records
+  capabilities:
+  - file_receipt
+  - report_missing_receipt

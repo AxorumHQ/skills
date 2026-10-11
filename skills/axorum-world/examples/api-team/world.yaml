@@ -1,0 +1,127 @@
+# A research agent and an ads agent spending from one team budget, each under
+# a mandate of its own, with the research agent's model tokens metered.
+#
+# The interview, answer by answer, and where each answer went:
+#   Agents        research_bot buys model access and data; ads_bot buys ads.
+#                 Both act for the marketing lead.
+#                 -> parties: two agents, roles [buyer], their capabilities.
+#   Currencies    US dollars in cents, and model tokens counted whole.
+#                 -> currencies: USD 2, TOKENS 0
+#   Accounts      Spend and payables in USD; research_bot may read spend.
+#                 -> accounts
+#   Ceilings      $10,000.00 for the team; research up to $6,000.00 of it,
+#                 ads up to $5,000.00.
+#                 -> mandates: team_budget, then two carved from it
+#   Deferrals     The annual data subscription is paid ahead and recognized
+#                 monthly.                               -> deferrals
+#   Usage         research_bot's model tokens: consumed, metered, billed.
+#                 -> usages, owned by research_bot
+#   Vendors       A model provider, a data vendor and an ad network, all
+#                 approved.                              -> Counterparties
+#   Rails         x402 and acp both settle. The very first acp call declines;
+#                 on day 3, x402 times out three times.
+#                 -> rails, and two rail events
+#   Timeline      The ad network is suspended on day 7 and a second network
+#                 approved; on day 14 the clock moves a day.
+#                 -> a Counterparties event, an advance
+#   Seed          42.                                    -> seed
+version: axorum.sandbox-world.v1
+world: api-team
+description: Two agents under one team budget, one of them metering model tokens.
+seed: 42
+policy:
+  file: policy.axp
+currencies:
+- currency: USD
+  exponent: 2
+- currency: TOKENS
+  exponent: 0
+accounts:
+- account: acc_0jffxpndb9a2garx5fj166tc4c
+  currency: USD
+  label: Agent spend (USD)
+  owner: party_2bgcx8txveb82acss2fjz2w59h
+- account: acc_118q65km28a9zrw0dbexkpd43v
+  currency: USD
+  label: Agent payables (USD)
+mandates:
+- mandate: mand_4rcxqt8kd3bc99kr06a57h4kxx
+  currency: USD
+  ceiling: 1000000
+  label: team_budget
+- mandate: mand_6x11g3q5xcc040dgbrde1prj9w
+  currency: USD
+  ceiling: 600000
+  parent: mand_4rcxqt8kd3bc99kr06a57h4kxx
+  label: Research
+- mandate: mand_4pkc3sp14rmzwdkaj0jqx31kvb
+  currency: USD
+  ceiling: 500000
+  parent: mand_4rcxqt8kd3bc99kr06a57h4kxx
+  label: Ads
+deferrals:
+- deferral: defr_798m9wrpdea6vqm9pr2v9nxmrz
+  currency: USD
+usages:
+- usage: usage_6b9be6aqvtwa41rddekb83360q
+  currency: TOKENS
+  owner: party_2bgcx8txveb82acss2fjz2w59h
+parties:
+- agent: agent://example.com/agent/research_01h455vb4pex5vsknk084sn02q
+  party: party_2bgcx8txveb82acss2fjz2w59h
+  roles: [buyer]
+  mandate: mand_6x11g3q5xcc040dgbrde1prj9w
+  capabilities: [purchase, rail/x402, rail/acp]
+- agent: agent://example.com/agent/ads_01h455vb4pex5vsknk084sn02q
+  party: party_7cky9f0ahdafma6d3hxkcb8s0g
+  roles: [buyer]
+  mandate: mand_4pkc3sp14rmzwdkaj0jqx31kvb
+  capabilities: [purchase, rail/acp]
+master_data:
+- Counterparties:
+    source_version: vendors-v1
+    entries:
+    - - model-provider
+      - display_name: Model Provider
+        approved: true
+    - - data-vendor
+      - display_name: Data Vendor
+        approved: true
+        erp_ref: V-3001
+    - - ad-network
+      - display_name: Ad Network
+        approved: true
+rails:
+  x402: settle
+  acp: settle
+events:
+- at: 0s
+  rail:
+    rail: acp
+    answer: decline
+    times: 1
+- at: 3d
+  rail:
+    rail: x402
+    answer: timeout
+    times: 3
+- at: 7d
+  master_data:
+    Counterparties:
+      source_version: vendors-v2
+      entries:
+      - - model-provider
+        - display_name: Model Provider
+          approved: true
+      - - data-vendor
+        - display_name: Data Vendor
+          approved: true
+          erp_ref: V-3001
+      - - ad-network
+        - display_name: Ad Network
+          approved: false
+      - - second-network
+        - display_name: Second Network
+          approved: true
+- at: 14d
+  advance: 1d

@@ -1,0 +1,39 @@
+// Accounts payable through month end. This policy is the world's to run, not
+// the subject of this example: the axorum-policy skill writes and proves
+// policies.
+policy {
+  role ap_clerk
+
+  action purchase(amount: amount, payee: text)
+  action book_accrual(amount: amount, period: tick)
+
+  party ap_bot agent roles(ap_clerk)
+  party controller principal
+
+  delegation ap_grant {
+    principal controller
+    agent ap_bot
+    scope { actions(purchase, book_accrual) roles(ap_clerk) }
+  }
+
+  // The AP agent pays vendors the vendor list approves.
+  rule pay_approved_vendors {
+    permitted any_in_role(ap_clerk) do purchase
+    when { ( param(payee) in approved counterparties ) }
+    priority 1
+  }
+
+  // No payment past the vendor's own limit on the vendor list.
+  rule within_vendor_limit {
+    forbidden any_in_role(ap_clerk) do purchase
+    when { ( posted debit USD > counterparty limit(payee) ) }
+    priority 10
+  }
+
+  // An accrual books into a fiscal period the calendar holds open.
+  rule accrue_in_open_periods {
+    permitted any_in_role(ap_clerk) do book_accrual
+    when { ( param(period) in open fiscal periods ) }
+    priority 1
+  }
+}

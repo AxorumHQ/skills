@@ -1,0 +1,151 @@
+# One AP agent paying vendors through January 2100 and into February.
+#
+# The interview, answer by answer, and where each answer went:
+#   Agents        ap_bot pays vendors and books accruals for the controller.
+#                 -> parties: one agent, roles [ap_clerk], its capabilities.
+#   Currency      US dollars, in cents.                  -> currencies: USD, 2
+#   Accounts      Spend and payables, which ap_bot may read, and accrued
+#                 liabilities.                           -> accounts
+#   Ceiling       $25,000.00 for AP this month.          -> mandates
+#   Vendors       Acme Supplies (limit $5,000.00, also spelled "acme"),
+#                 Globex (limit $10,000.00), Shady LLC (known, not approved).
+#                 -> master_data: Counterparties
+#   Chart         6000 spend, 2000 payables, 2100 accrued.
+#                 -> master_data: GlAccounts
+#   Calendar      January and February 2100, both open. -> FiscalPeriods
+#   Rails         x402 settles. On day 2 it declines the next two calls; on
+#                 day 20 it goes down, and on day 22 it is back.
+#                 -> rails, and three rail events
+#   Timeline      Globex is suspended on day 5. January closes on day 31, and
+#                 the clock then moves a day into February.
+#                 -> a Counterparties event, a FiscalPeriods event, an advance
+#   Seed          7, so every run mints the same keys.   -> seed
+version: axorum.sandbox-world.v1
+world: ap-month-end
+description: One AP agent paying approved vendors through month end, on a flaky rail.
+seed: 7
+policy:
+  file: policy.axp
+currencies:
+- currency: USD
+  exponent: 2
+accounts:
+- account: acc_0jffxpndb9a2garx5fj166tc4c
+  currency: USD
+  label: Agent spend (USD)
+  owner: party_6ps6y8mc3tb628qrr6xpqkr0yr
+- account: acc_118q65km28a9zrw0dbexkpd43v
+  currency: USD
+  label: Agent payables (USD)
+  owner: party_6ps6y8mc3tb628qrr6xpqkr0yr
+- account: acc_71q8870n88j1y9sznr20c9mwc3
+  currency: USD
+  label: Accrued liabilities (USD)
+mandates:
+- mandate: mand_0kn2j194jvw18r107jns6m12h5
+  currency: USD
+  ceiling: 2500000
+  label: AP budget, January
+parties:
+- agent: agent://example.com/agent/ap_01h455vb4pex5vsknk084sn02q
+  party: party_6ps6y8mc3tb628qrr6xpqkr0yr
+  roles: [ap_clerk]
+  mandate: mand_0kn2j194jvw18r107jns6m12h5
+  capabilities: [purchase, book_accrual, rail/x402]
+master_data:
+- Counterparties:
+    source_version: vendors-2100-01
+    entries:
+    - - acme-supplies
+      - display_name: Acme Supplies
+        approved: true
+        erp_ref: V-1001
+        aliases: [acme]
+        limit:
+          minor: 500000
+          currency: USD
+    - - globex
+      - display_name: Globex
+        approved: true
+        erp_ref: V-1002
+        limit:
+          minor: 1000000
+          currency: USD
+    - - shady-llc
+      - display_name: Shady LLC
+        approved: false
+- GlAccounts:
+    source_version: "2100.01"
+    entries:
+    - - acc_0jffxpndb9a2garx5fj166tc4c
+      - code: "6000"
+        name: Agent spend
+    - - acc_118q65km28a9zrw0dbexkpd43v
+      - code: "2000"
+        name: Agent payables
+    - - acc_71q8870n88j1y9sznr20c9mwc3
+      - code: "2100"
+        name: Accrued liabilities
+- FiscalPeriods:
+    source_version: fy2100-v1
+    periods:
+    - id: 2100-01
+      label: January 2100
+      from: 0
+      to: 2678399
+    - id: 2100-02
+      label: February 2100
+      from: 2678400
+      to: 5097599
+rails:
+  x402: settle
+events:
+- at: 2d
+  rail:
+    rail: x402
+    answer: decline
+    times: 2
+- at: 5d
+  master_data:
+    Counterparties:
+      source_version: vendors-2100-01b
+      entries:
+      - - acme-supplies
+        - display_name: Acme Supplies
+          approved: true
+          erp_ref: V-1001
+          aliases: [acme]
+          limit:
+            minor: 500000
+            currency: USD
+      - - globex
+        - display_name: Globex
+          approved: false
+          erp_ref: V-1002
+      - - shady-llc
+        - display_name: Shady LLC
+          approved: false
+- at: 20d
+  rail:
+    rail: x402
+    answer: timeout
+- at: 22d
+  rail:
+    rail: x402
+    answer: settle
+- at: 31d
+  master_data:
+    FiscalPeriods:
+      source_version: fy2100-v2
+      periods:
+      - id: 2100-01
+        label: January 2100
+        from: 0
+        to: 2678399
+        open: false
+      - id: 2100-02
+        label: February 2100
+        from: 2678400
+        to: 5097599
+- at: 31d
+  advance: 1d
