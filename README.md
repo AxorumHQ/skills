@@ -72,8 +72,8 @@ skill doesn't appear, restart Codex.
 
 ## Other agents
 
-Other agents that read `SKILL.md`: copy each whole skill directory to wherever that agent loads
-skills from.
+Other agents that support the open [Agent Skills](https://agentskills.io) standard and read
+`SKILL.md`: copy each whole skill directory to wherever that agent loads skills from.
 
 ## Versions
 
