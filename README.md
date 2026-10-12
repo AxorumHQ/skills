@@ -19,7 +19,7 @@ sandbox these skills drive.
   released packages:
 
   ```shell
-  pip install "axorum-sandbox>=0.3.0" "axorum-client>=1.2.0"
+  pip install "axorum-sandbox>=0.4.0" "axorum-client>=1.2.0"
   ```
 
   `axorum-world` needs only `axorum-sandbox`. A script that finds a package missing or too old
@@ -77,8 +77,8 @@ Other agents that support the open [Agent Skills](https://agentskills.io) standa
 
 ## Versions
 
-This snapshot matches **axorum-sandbox 0.3.0**. Each axorum-sandbox release publishes the skills
-that match it here, tagged with the release's version (`v0.3.0`), and sets the plugin's version to
+This snapshot matches **axorum-sandbox 0.4.0**. Each axorum-sandbox release publishes the skills
+that match it here, tagged with the release's version (`v0.4.0`), and sets the plugin's version to
 the same number.
 
 ## License

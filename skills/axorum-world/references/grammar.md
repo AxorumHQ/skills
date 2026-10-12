@@ -915,3 +915,88 @@ events:
         - display_name: Shady LLC
           approved: false
 ```
+
+## Protocol-aware worlds and recordings, version 2
+
+Protocol mock configuration and exchanges require `axorum.sandbox-world.v2`.
+Ledger-only worlds and recordings retain version 1 and their original bytes.
+The new engine reads both versions. A protocol simulation exercises a local
+merchant, facilitator or credential-provider endpoint without real money or
+external networking. The legacy `rails` map still describes post-ledger rail
+answers; protocol endpoints describe the actual HTTP interactions an agent sees.
+
+The `events[].protocol` payload uses the engine-owned catalogue in
+`protocol-catalogue.json`. It enumerates supported protocols, stages, presets,
+parameter formats, bounded transport faults, quick sequences and assertions.
+Its strict JSON contract, and the `script[].protocol` exchange contract, are in
+the version 2 snapshot schema (`protocol_change` and `protocol_step`),
+shipped with the npm and Python sandbox packages. Python exposes it as
+`snapshot_schema("v2")`. These two engine payloads are governed by that schema and
+the catalogue, rather than a duplicate list of fields in this reference.
+
+```yaml event
+protocol:
+  protocol: x402
+  stage: resource
+  behaviors:
+  - preset: payment_required
+  - preset: paid
+  repeat: last
+  assertions:
+    max_requests: 2
+    max_effects: 1
+    final_status: 200
+    sequences_consumed: true
+    receipt_present: true
+```
+
+A portable exchange records safe request projections and hashes, its planned
+response, its typed transport effect, its synthetic side-effect identity and
+whether a retry reused an existing effect. Tokens, signatures, delegated
+mandates and original request bodies are never recorded. Replays compare the
+entire execution without sleeping or making network requests. Regression
+assertions are evaluated explicitly when a scenario runs in CI; resuming an
+unfinished recording only verifies its recorded behavior.
+
+```yaml
+version: axorum.sandbox-world.v2
+world: local-protocol
+policy:
+  source: |
+    policy {
+      role clerk
+      action purchase(amount: amount, payee: text)
+      party clerk_bot agent roles(clerk)
+      party controller principal
+      delegation clerk_grant {
+        principal controller
+        agent clerk_bot
+        scope { actions(purchase) roles(clerk) }
+      }
+      rule permit_purchase { permitted any_in_role(clerk) do purchase priority 1 }
+    }
+currencies: [{currency: USD, exponent: 2}]
+parties:
+- agent: agent://example.com/agent/clerk_01h455vb4pex5vsknk084sn02q
+  party: party_28zwgzaew1a2r92s1y9swtj3nj
+  roles: [clerk]
+events:
+- at: 0s
+  protocol: {protocol: x402, stage: resource, behaviors: [{preset: malformed_response}]}
+script:
+- protocol:
+    at: 0s
+    execution:
+      request:
+        protocol: x402
+        stage: resource
+        method: GET
+        path: /_sandbox/rails/x402/resource
+        body_hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        idempotency_hash: null
+        fields: {payment_present: false, requirements_match: false}
+      response: {status: 200, headers: {content-type: application/json, Axorum-Sandbox: simulation}, body: '{invalid-sandbox-json'}
+      transport: {kind: immediate}
+      effect: null
+      deduplicated: false
+```
