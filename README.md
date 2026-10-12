@@ -54,6 +54,27 @@ cp -R axorum-skills/skills/axorum-policy axorum-skills/skills/axorum-world axoru
 Copy each skill's whole directory: its scripts, references and examples are read from beside its
 `SKILL.md`.
 
+## Install in Codex
+
+Copy the skills you want into your personal skills directory, `~/.agents/skills/`:
+
+```shell
+git clone https://github.com/AxorumHQ/skills.git axorum-skills
+mkdir -p ~/.agents/skills
+cp -R axorum-skills/skills/axorum-policy axorum-skills/skills/axorum-world axorum-skills/skills/axorum ~/.agents/skills/
+```
+
+Copy each skill's whole directory, as for Claude Code. To use the skills in one repository only,
+copy them into its `.agents/skills/` instead: Codex reads that directory in each folder from where
+it starts up to the repository root. In the Codex CLI or IDE extension, run `/skills` or type
+`$axorum-policy` to use one; Codex can also pick one when a task matches its description. If a
+skill doesn't appear, restart Codex.
+
+## Other agents
+
+Other agents that read `SKILL.md`: copy each whole skill directory to wherever that agent loads
+skills from.
+
 ## Versions
 
 This snapshot matches **axorum-sandbox 0.3.0**. Each axorum-sandbox release publishes the skills
