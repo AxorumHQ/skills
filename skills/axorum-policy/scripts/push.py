@@ -6,9 +6,11 @@ Usage:
 
 First checks the policy against the world the sandbox at URL is running (its
 run so far, as ``axorum-sandbox save-run`` writes it, not the world file on
-disk), every warning counting as an error. A policy that does not compile or
-draws a lint is the policy's to fix; one that draws only world-fit warnings
-(``DSL3xxx``) does not fit that world. Then says which running totals the
+disk), every warning counting as an error. A policy that does not compile,
+that the check refuses though it compiles (``DSL3010``: it takes more of a
+run's snapshot than a policy may), or that draws a lint is the policy's to
+fix; one that draws only world-fit warnings (``DSL3xxx``) does not fit that
+world. Then says which running totals the
 change keeps and which start again at zero: the engine keeps a total whose
 declaration is unchanged, so the declarations of the policy in force and of
 this one are compared in the canonical layout the engine stores. Then, unless
@@ -24,8 +26,9 @@ by the sandbox, changes nothing, and the refusal says why. The URL is
 script never starts, stops or restarts a sandbox.
 
 Exit 0 when the policy is in force, changed or already (with ``--dry-run``:
-when it would be taken), 3 when the check refused it (it does not compile,
-draws a lint, or does not fit the running world) or the sandbox refused it, 2
+when it would be taken), 3 when the check refused it (it does not compile, is
+too large for a run's snapshot, draws a lint, or does not fit the running
+world) or the sandbox refused it, 2
 when the run at URL could not be saved (no sandbox answered there, say), the
 policy is not in force after the sandbox could not be asked, whether it is in
 force could not be told, or no installed ``axorum-sandbox`` can check, read the
@@ -52,10 +55,16 @@ DEFAULT_URL = "http://127.0.0.1:7340"
 URL_VAR = "AXORUM_SANDBOX_URL"
 AGGREGATE = re.compile(r"^aggregate ([a-z0-9_]+) ")
 WORLD_FIT = "DSL3"
+ERROR_CODE = re.compile(r"^\s*error\[(DSL\d{4})\]", re.MULTILINE)
+COMPILE_CODES = ("DSL0", "DSL1")
 
 NOT_COMPILED = (
     "this policy does not compile, so nothing was pushed: fix it as the error above says, "
     "check it with check.py, and push again."
+)
+CHECK_REFUSED = (
+    "the check refused this policy ({codes}), so nothing was pushed: it compiles, but fix it "
+    "as the error above says, check it with check.py, and push again."
 )
 NOT_CLEAN = (
     "this policy draws {codes}, so nothing was pushed: fix it as each warning above says, "
@@ -120,6 +129,20 @@ def refusal(codes: Sequence[str], url: str) -> str:
     if codes and all(code.startswith(WORLD_FIT) for code in codes):
         return MISFIT.format(url=url, codes=f" ({named})")
     return NOT_CLEAN.format(codes=named)
+
+
+def not_passed(stderr: str) -> str:
+    """Say why a policy whose check failed on its own, saying ``stderr``, was not pushed. Pure.
+
+    The check refuses some policies that compile, such as one that takes more
+    of a run's snapshot than a policy may (``DSL3010``). The codes of the
+    errors it printed tell those apart from a policy that does not compile
+    (``DSL0xxx``, ``DSL1xxx``).
+    """
+    refused = sorted(
+        {code for code in ERROR_CODE.findall(stderr) if not code.startswith(COMPILE_CODES)}
+    )
+    return CHECK_REFUSED.format(codes=", ".join(refused)) if refused else NOT_COMPILED
 
 
 def totals(running: dict[str, str], draft: dict[str, str]) -> list[str]:
@@ -229,8 +252,9 @@ def preflight(binary: str, policy: Path, url: str) -> int | None:
             warnings = json.loads(checked.stdout).get("warnings", [])
             codes = [str(warning["code"]) for warning in warnings]
             return fail(refusal(codes, url), 3) if codes else None
-        if run(binary, "check", str(policy), "-q").returncode != 0:
-            return fail(NOT_COMPILED, 3)
+        alone = run(binary, "check", str(policy), "-q")
+        if alone.returncode != 0:
+            return fail(not_passed(alone.stderr), 3)
         try:
             _, source = in_force(url)
         except (OSError, ValueError, KeyError) as unread:

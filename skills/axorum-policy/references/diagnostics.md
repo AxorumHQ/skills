@@ -59,11 +59,15 @@ check too: a well-structured policy has none.
 | DSL3007 | warning | A world agent bound in other roles than exactly the ones the policy gives its party: without one, so no rule written for that role applies to it; with a role the policy declares but does not give the party, so rules written for that role reach it (their duties and `per role` totals always, their permissions and refusals where a delegation to it scopes that role) while the policy's lints read the party without it; or with a role the policy does not declare, which no rule or delegation can name. | Bind it with exactly the roles the policy gives that party: the message prints the `roles: [...]` line. When its only fault is an added declared role, the help also offers giving the party that role in the policy; ask the user which they mean. |
 | DSL3008 | warning | A world agent whose `capabilities` leave out an action the policy delegates to it, so every intent to perform that action is turned away (`attestation`, 403) before the policy is consulted. | Add the action to its `capabilities`: the message prints the line. |
 | DSL3009 | warning | A rule's `specific(...)`, as its actor or its `performed_by`, names a party the policy does not declare and no world agent acts as, so the rule applies to no intent there, or no intent discharges the duty. Most often a misspelling: an undeclared `specific(...)` compiles, as a party known only at run time. | Fix the name as the help says (it names the closest declared party). When the world is meant to have that party, declare it in the policy and bind an agent to it in the world. |
+| DSL3010 | error | A policy that takes more of a sandbox run's snapshot than a policy may: the snapshot carries its rule table, its document (its source, each rule's paragraph, and the setup and every paragraph again as text) and its parties, and a policy may take half of what a run may, 524288 of the 1048576 characters the console keeps of a run and 1048576 of the 2097152 bytes the sandbox sends for one. Bytes are counted as sent: a character past ASCII takes two to four, and a quote, a backslash or a control character more. The message names what each part takes in each measure the policy is over; the check also prints the share of a policy that fits (`It takes ...`). | Cut rules, or shorten their names, conditions and text values: each rule's paragraph is written three times, and four times more at every refusal it makes (twice in each of the run's activity and exceptions reports), so a long text value in a rule that refuses often costs most, the more so in characters past ASCII. |
 
-The `DSL3xxx` codes need the world's facts (its currencies, the mandates it
-opens, the agents it binds and their roles and capabilities), so they appear only when `check.py` is given
-`--world`. With a world, the check also prints each mandate and party the
-policy names with the id the world must use for it.
+The `DSL3xxx` codes from `DSL3001` to `DSL3009` need the world's facts (its
+currencies, the mandates it opens, the agents it binds and their roles and
+capabilities), so they appear only when `check.py` is given `--world`.
+`DSL3010` appears with or without it: a world changes only how the
+policy's amounts render, so only a little of the share. With a world, the
+check also prints each mandate and party the policy names with the id the
+world must use for it.
 
 ## A policy change the world schedules
 

@@ -11,7 +11,8 @@ under "What the world check refuses"; then the policy is compiled and judged
 against the world: the currencies it declares, and the mandates and parties
 the policy names, opened and bound under the ids their names derive, with
 the roles and capabilities the policy expects, and every party a rule's
-``specific(...)`` names (DSL3001 to DSL3009). Each policy change the world's
+``specific(...)`` names (DSL3001 to DSL3009), and what the policy takes of
+a run's snapshot (DSL3010). Each policy change the world's
 timeline schedules, inline or in a file beside the world, is compiled and
 judged against the world too; its lint warnings are not reported or counted.
 
