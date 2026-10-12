@@ -40,7 +40,7 @@ claude plugin install axorum@axorum
 Inside a session, `/plugin marketplace add AxorumHQ/skills` and `/plugin install axorum@axorum`
 do the same. The skills load as `axorum:axorum-policy`, `axorum:axorum-world` and
 `axorum:axorum`, and Claude uses each one when a task matches its description. To pick up a new
-release, run `claude plugin update axorum@axorum`.
+version, run `claude plugin update axorum@axorum`.
 
 Or copy the skills you want into your personal skills directory (or a project's
 `.claude/skills/`):
@@ -77,9 +77,15 @@ Other agents that support the open [Agent Skills](https://agentskills.io) standa
 
 ## Versions
 
-This snapshot matches **axorum-sandbox 0.4.0**. Each axorum-sandbox release publishes the skills
-that match it here, tagged with the release's version (`v0.4.0`), and sets the plugin's version to
-the same number.
+This snapshot matches **axorum-sandbox 0.4.0**. It is tagged here with its version (`v0.4.0`),
+in one of two shapes:
+
+- `vX.Y.Z`: the skills that shipped with axorum-sandbox X.Y.Z, published by that release.
+- `vX.Y.Z-skills.N`: a fix to the skills, published between releases, that works with
+  axorum-sandbox X.Y.Z. `N` counts from 1 for each X.Y.Z.
+
+The plugin's version is the tag without its `v`, so `claude plugin update axorum@axorum` picks up
+both. The `pip install` above names the lowest axorum-sandbox these skills need.
 
 ## License
 
