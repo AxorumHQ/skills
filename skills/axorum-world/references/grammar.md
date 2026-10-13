@@ -1,4 +1,4 @@
-# The sandbox world format, `axorum.sandbox-world.v1`
+# The sandbox world format, `axorum.sandbox-world.v1` and `axorum.sandbox-world.v2`
 
 A world is what a sandbox run starts from. It holds the policy, the currencies
 amounts are in, and the accounts, budgets and balances it opens. It also holds
@@ -47,6 +47,15 @@ parties:
 
 ## Reading the format
 
+- **The version.** A world is `axorum.sandbox-world.v1` unless it holds
+  protocol content: an `events` entry that changes a protocol endpoint, a
+  script's `protocol` step, or a script `inject` of a protocol change. A world
+  with protocol content needs `axorum.sandbox-world.v2`, and one that says
+  `v1` is refused: `protocol content requires axorum.sandbox-world.v2`. The
+  sandbox reads both versions. A world without protocol content reads under
+  either and keeps the version it says, and `save-run` writes `v2` for a run
+  that recorded protocol content. Every rule below holds under both versions.
+  Protocol content itself is the last section.
 - **YAML is read strictly.** A key the format does not define is refused,
   everywhere but inside the engine payloads a script records (see Script), and
   so are a duplicate key, a merge key (`<<`), a boolean spelled other than
@@ -103,7 +112,7 @@ The keys, in the order the sandbox writes them:
 
 | Key | Required | Holds |
 |---|---|---|
-| `version` | yes | always `axorum.sandbox-world.v1` |
+| `version` | yes | `axorum.sandbox-world.v1`, or `axorum.sandbox-world.v2` for a world with protocol content |
 | `world` | yes | the world's name |
 | `description` | no | what the world is for |
 | `seed` | no | the seed a run starts from |
@@ -372,7 +381,8 @@ master_data:
 `timeout`. A rail the map does not name settles. A mocked rail answers the
 call an intent makes when the intent names the rail and the policy allows it.
 Its answer is reported beside the outcome, and changes neither the verdict
-nor the ledger.
+nor the ledger. To shape the HTTP exchanges an agent has with a merchant or a
+facilitator instead, set a protocol endpoint (the last section).
 
 ```yaml
 rails:
@@ -384,8 +394,8 @@ rails:
 ## Events
 
 `events` is the timeline. Each event is `at`, a span from the start of the
-run, and exactly one change beside it: `master_data`, `rail`, `advance` or
-`policy`.
+run, and exactly one change beside it: `master_data`, `rail`, `advance`,
+`policy` or `protocol`.
 
 - Events are listed in time order. Events at the same `at` apply in list
   order.
@@ -421,6 +431,8 @@ run, and exactly one change beside it: `master_data`, `rail`, `advance` or
   `source`, so a scenario carries every policy its run changed to.
   `axorum-sandbox publish world` needs `source`: the console keeps the world
   alone, with no file beside it, and publish refuses a change by `file`.
+- `protocol` sets how one stage of a protocol endpoint answers, and makes the
+  world version 2. The last section covers it.
 
 ```yaml
 events:
@@ -742,7 +754,8 @@ in the list, counting from one, so `event 3` is the third entry of `events`:
   `365250d`, or a script step whose `inject` advances the clock from its `at`
   past it;
 - a script step that records a rail answer for an intent that names no rail,
-  or that the gateway refused.
+  or that the gateway refused;
+- protocol content in a world that says `axorum.sandbox-world.v1`.
 
 ## What loading refuses
 
@@ -918,12 +931,12 @@ events:
 
 ## Protocol-aware worlds and recordings, version 2
 
-Protocol mock configuration and exchanges require `axorum.sandbox-world.v2`.
-Ledger-only worlds and recordings retain version 1 and their original bytes.
-The new engine reads both versions. A protocol simulation exercises a local
-merchant, facilitator or credential-provider endpoint without real money or
-external networking. The legacy `rails` map still describes post-ledger rail
-answers; protocol endpoints describe the actual HTTP interactions an agent sees.
+Protocol content is what makes a world version 2 (see The version, under
+Reading the format). A ledger-only world or recording stays version 1, with
+its bytes as written. A protocol simulation exercises a local merchant,
+facilitator or credential-provider endpoint without real money or external
+networking. The `rails` map still describes the answer a rail gives after the
+ledger decides; protocol endpoints describe the HTTP exchanges an agent has.
 
 The `events[].protocol` payload uses the engine-owned catalogue in
 `protocol-catalogue.json`. It enumerates supported protocols, stages, presets,

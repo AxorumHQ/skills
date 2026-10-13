@@ -248,6 +248,101 @@ change stands until the next one.
     answer: settle
 ```
 
+## Merchants the agents pay themselves
+
+These set a protocol endpoint: the merchant an agent pays over HTTP itself
+(interview topic 9). Each is an `events` entry from `paid-research`.
+
+### The world says version 2
+
+"Our agent pays the data API over x402 itself." A world with a protocol
+endpoint says this as its `version`, and one that still says `v1` is
+refused.
+
+```yaml
+version: axorum.sandbox-world.v2
+```
+
+### Payment required, then paid
+
+"The data API charges 0.25 USDC a report and hands it over once paid, one
+report after another." Unpaid, it answers 402 with the price, in the token's
+smallest unit; paid, it hands over the body with a receipt. `cycle` starts
+the pair over for the next report.
+
+```yaml
+- at: 0s
+  protocol:
+    protocol: x402
+    stage: resource
+    behaviors:
+    - preset: payment_required
+      parameters:
+        amount: "250000"
+      match:
+        payment_present: false
+    - preset: paid
+      parameters:
+        body: '{"report":"market sizing"}'
+      match:
+        payment_present: true
+    repeat: cycle
+```
+
+### A payment request the agent cannot read
+
+"On day 2 the API's 402 comes back garbled." One behavior with the default
+`repeat: last` answers every request that way until the next change.
+
+```yaml
+- at: 2d
+  protocol:
+    protocol: x402
+    stage: resource
+    behaviors:
+    - preset: malformed_challenge
+```
+
+### A paid call that times out, and the retry
+
+"From day 3 the first paid call for each report gets no answer; the retry
+gets the report." The `timeout` transport holds the connection for its
+`milliseconds` and closes it with no reply. A retry with the same signed
+payment is recorded as the same payment, not a second one, and gets the
+reply the timed-out call was given, so the body goes on that behavior; the
+next behavior answers only a retry with a new payment.
+
+```yaml
+- at: 3d
+  protocol:
+    protocol: x402
+    stage: resource
+    behaviors:
+    - preset: payment_required
+      parameters:
+        amount: "250000"
+      match:
+        payment_present: false
+    - preset: paid
+      parameters:
+        body: '{"report":"market sizing"}'
+      transport:
+        kind: timeout
+        milliseconds: 10000
+      match:
+        payment_present: true
+    - preset: paid
+      parameters:
+        body: '{"report":"market sizing"}'
+      match:
+        payment_present: true
+    repeat: cycle
+```
+
+An x402 seller's facilitator (`stage: verify` or `settle`), ACP checkout and
+AP2 take the same shape, with that protocol's stages and presets from the
+list a running sandbox serves at `/_sandbox/protocols`.
+
 ## Over time
 
 ### A vendor suspended mid-run

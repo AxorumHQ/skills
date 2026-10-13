@@ -56,6 +56,7 @@ refuses".
 | `script step 1 advances to 365301d, past the clock's last second at 365250d` | a scenario's script injects an `advance` that carries the clock from the step's `at` past its last second; a live run refuses that move and saves no such step, so the script was edited by hand | save the run again instead of editing its script; for a step meant to stay, shorten the advance so its `at` plus the advance is `365250d` or earlier |
 | `a master-data entry takes ... bytes as a snapshot writes it, over the 4096 one may take: ...` | one counterparty, chart entry or fiscal period, named at the end, whose record, its id and every field as JSON, is over 4,096 bytes, often a long alias list or a name past ASCII, at two to four bytes a character | shorten that record: fewer or shorter aliases, a shorter display name or label |
 | `event 7 changes the policy to an empty source` | a `policy` change on the timeline with no policy text, often a `source:` left blank | write the policy's text under `source`, or name its file beside the world with `file:` |
+| `protocol content requires axorum.sandbox-world.v2` | the world sets a protocol endpoint (a `protocol` event) while its `version` still says `axorum.sandbox-world.v1` | change it to `version: axorum.sandbox-world.v2` |
 
 ## Policy against the world
 

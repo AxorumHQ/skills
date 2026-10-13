@@ -1,6 +1,6 @@
 ---
 name: axorum-world
-description: This skill should be used when someone wants to build, revise, review, fix or publish an Axorum sandbox world (world.yaml), or describes the stage their agents should be tested on in the sandbox, such as "set up a sandbox world for our AP agent", "give the sandbox agents a team budget", "add our vendors to the world", "make the sandbox's payment network flaky", "close the month on day 31 in the world", "simulate an outage", "the world check fails", or "publish my world to the console". It guides a user who may know nothing of the world format, one topic at a time, to a world that checks clean against its policy and plays its timeline, read back in plain words. The world holds the budgets, vendor lists and calendars; the rules that read them are the policy's. Not for writing the policy itself (the axorum-policy skill), nor for submitting intents as an agent (the axorum skill).
+description: This skill should be used when someone wants to build, revise, review, fix or publish an Axorum sandbox world (world.yaml), or describes the stage their agents should be tested on in the sandbox, such as "set up a sandbox world for our AP agent", "give the sandbox agents a team budget", "add our vendors to the world", "make the sandbox's payment network flaky", "make the x402 merchant return a malformed 402", "make the facilitator time out", "close the month on day 31 in the world", "simulate an outage", "the world check fails", or "publish my world to the console". It guides a user who may know nothing of the world format, one topic at a time, to a world that checks clean against its policy and plays its timeline, read back in plain words. The world holds the budgets, vendor lists and calendars; the rules that read them are the policy's. Not for writing the policy itself (the axorum-policy skill), nor for submitting intents as an agent (the axorum skill).
 ---
 
 # Guiding a user to a world that says what they mean
@@ -43,8 +43,18 @@ file only.
 | paid ahead, recognized over time | deferral balance |
 | metered usage, model tokens | usage balance |
 | the payment network declines, goes down, is back | rail answer, decline, timeout, settle |
+| the merchant asks for payment, hands over what was paid for, sends a garbled reply, never answers | protocol endpoint, stage, preset, transport |
 | the vendor list as of day 7 | a master-data event, source_version |
 | every run comes out the same | seed |
+
+A payment network and a merchant are two different things to test. A rail
+answer is what Axorum reports beside its verdict when an intent names the
+rail: the agent reads it from Axorum. A protocol endpoint is the merchant, or
+the merchant's facilitator, that the agent itself calls over HTTP, speaking
+x402, ACP or AP2: the sandbox plays that side of the exchange. Use a rail
+answer when the test is how the agent handles Axorum's report. Use a protocol
+endpoint when the agent pays a merchant itself and the test is how it handles
+what the merchant says back. A world can hold both.
 
 ## The scripts
 
@@ -101,7 +111,16 @@ console out of reach).
   nothing moves it but the agent's test (`sandbox.advance("7d")`,
   `POST /_sandbox/advance`) and, once reached, the world's own `advance`
   events.
+- **The version.** A world is
+  `version: axorum.sandbox-world.v1` unless it holds protocol content: a
+  `protocol` event that sets a protocol endpoint (topic 9), or a scenario's
+  recorded protocol step or injected protocol change. That world is
+  `version: axorum.sandbox-world.v2`, and one that still says `v1` is
+  refused. The sandbox reads both, so a world with no protocol content keeps
+  `v1`.
 - **Amounts are whole minor units**: `250000` at exponent 2 is $2,500.00.
+  A protocol endpoint's price is the protocol's own: x402 asks in the token's
+  smallest unit, so `"250000"` of a six-decimal token such as USDC is 0.25.
 - **Ids**: mint accounts, mandates, deferrals and usage balances with
   `python <skill-dir>/scripts/new_id.py acc mand ...`. A party, and a mandate
   the policy names, use the id their name derives; `check.py --policy
@@ -122,7 +141,8 @@ One topic per turn, in this order: agents and who they act for; their roles
 and what they may touch; currencies; accounts and who reads them; budgets
 (the mandate tree); anything paid ahead or metered; vendors, the chart of
 accounts and the fiscal calendar; how the payment networks behave over time;
-the timeline; the seed. At topic 1, when there is no policy yet or an agent
+the merchants the agents pay themselves, and how each answers; the timeline;
+the seed. At topic 1, when there is no policy yet or an agent
 does a job the policy has no party for, hand off first (the policy section
 below). Each question carries why it matters and two to four options with a
 labelled default. Use a structured-question tool such as
@@ -303,6 +323,7 @@ Leave out ids, minor-unit arithmetic and the full YAML.
 | `references/diagnostics.md` | Every refusal by step: reading, policy against world, timeline policy changes, loading, events, replaying a scenario, publishing |
 | `examples/ap-month-end/` | One AP agent through month end: vendor limits, a chart, a fiscal close, a flaky network |
 | `examples/api-team/` | Two agents under a team budget with slices, metered tokens, a prepaid subscription, two networks |
+| `examples/paid-research/` | One agent paying a data API over x402 that asks for payment, garbles a reply and drops an answer (version 2) |
 | `scripts/check.py` | Read the world and judge its policy against it; with `--policy` alone, list the ids a world needs |
 | `scripts/run.py` | Load the world and play its timeline in a throwaway sandbox |
 | `scripts/new_id.py` | Mint fresh ids for accounts, mandates, deferrals and usage balances |

@@ -1,0 +1,23 @@
+// One research agent buying paid reports. This policy is the world's to run,
+// not the subject of this example: the axorum-policy skill writes and proves
+// policies.
+policy {
+  role buyer
+
+  action purchase(amount: amount, payee: text)
+
+  party research_bot agent roles(buyer)
+  party research_lead principal
+
+  delegation research_grant {
+    principal research_lead
+    agent research_bot
+    scope { actions(purchase) roles(buyer) }
+  }
+
+  // A buyer may buy research.
+  rule buy_research {
+    permitted any_in_role(buyer) do purchase
+    priority 1
+  }
+}

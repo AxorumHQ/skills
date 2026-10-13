@@ -1,0 +1,92 @@
+# A research agent that buys reports from a paid data API over x402, while the
+# API asks for payment, sends a garbled payment request, and drops an answer.
+#
+# The interview, answer by answer, and where each answer went:
+#   Agents        research_bot buys reports for the research lead.
+#                 -> parties: one agent, role [buyer], its capabilities.
+#   Currencies    US dollars in cents.                   -> currencies: USD 2
+#   Accounts      Research spend in USD, which research_bot may read.
+#                 -> accounts
+#   Ceilings      $500.00 for research, all of it research_bot's.
+#                 -> mandates: one, held by research_bot
+#   Rails         Every network settles.                 -> no rails map
+#   Protocols     research_bot pays the data API over x402 itself. The API
+#                 asks for 0.25 USDC a report and serves it once paid. On day
+#                 2 its payment request comes back garbled. From day 3 the
+#                 first paid call for each report gets no answer for 10
+#                 seconds, and a retry with the same payment gets the report.
+#                 -> version v2, three x402 resource events
+#   Timeline      Nothing else changes.                  -> no other events
+#   Seed          11.                                    -> seed
+version: axorum.sandbox-world.v2
+world: paid-research
+description: One research agent buying reports over x402 from a data API that misbehaves.
+seed: 11
+policy:
+  file: policy.axp
+currencies:
+- currency: USD
+  exponent: 2
+accounts:
+- account: acc_2qjy3z6ms79k5r4j9y77msk4wv
+  currency: USD
+  label: Research spend (USD)
+  owner: party_2bgcx8txveb82acss2fjz2w59h
+mandates:
+- mandate: mand_0a9t264gs38my8wfch8qae9wtw
+  currency: USD
+  ceiling: 50000
+  label: Research budget
+parties:
+- agent: agent://example.com/agent/research_01h455vb4pex5vsknk084sn02q
+  party: party_2bgcx8txveb82acss2fjz2w59h
+  roles: [buyer]
+  mandate: mand_0a9t264gs38my8wfch8qae9wtw
+  capabilities: [purchase, rail/x402]
+events:
+- at: 0s
+  protocol:
+    protocol: x402
+    stage: resource
+    behaviors:
+    - preset: payment_required
+      parameters:
+        amount: "250000"
+      match:
+        payment_present: false
+    - preset: paid
+      parameters:
+        body: '{"report":"market sizing"}'
+      match:
+        payment_present: true
+    repeat: cycle
+- at: 2d
+  protocol:
+    protocol: x402
+    stage: resource
+    behaviors:
+    - preset: malformed_challenge
+- at: 3d
+  protocol:
+    protocol: x402
+    stage: resource
+    behaviors:
+    - preset: payment_required
+      parameters:
+        amount: "250000"
+      match:
+        payment_present: false
+    - preset: paid
+      parameters:
+        body: '{"report":"market sizing"}'
+      transport:
+        kind: timeout
+        milliseconds: 10000
+      match:
+        payment_present: true
+    - preset: paid
+      parameters:
+        body: '{"report":"market sizing"}'
+      match:
+        payment_present: true
+    repeat: cycle

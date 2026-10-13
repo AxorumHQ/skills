@@ -23,8 +23,8 @@ run it and read the change back.
 ## The world brief
 
 Keep a running brief at the top of `world.yaml`, as a comment, one line per
-topic: the answer in the user's words, then the key it became. Both examples
-open with one.
+topic: the answer in the user's words, then the key it became. Every example
+opens with one.
 
 ```text
 # The interview, answer by answer, and where each answer went:
@@ -151,7 +151,63 @@ Mark an answer the user did not give, but the skill chose as the default,
 - **Becomes**: `rails` for the standing answers, and `rail` events for the
   changes over time. A slow or failing network is `timeout`.
 
-## 9. The timeline
+## 9. Merchants the agents pay themselves
+
+- **Ask**: "Does an agent pay a merchant or an API itself, over x402, ACP or
+  AP2? If so, what should that merchant do: ask for payment and hand over
+  what was paid for, send a reply the agent cannot read, or go quiet?"
+- **Why**: the sandbox can play the merchant's side of the exchange, so the
+  agent's own payment code meets each reply a real merchant gives, with no
+  real money and no network. An agent that only sends intents to Axorum and
+  reads the rail answer has nothing to set here: topic 8 covers it.
+- **Which part of the exchange the agent meets**: an x402 buyer calls the
+  resource, the paid URL; an x402 seller checks and collects a payment
+  through a facilitator, its `verify` and `settle` stages. ACP checkout has
+  `create`, `read`, `update`, `complete` and `cancel`; AP2 has
+  `instruments`, `payment_mandate` and `checkout_mandate`. Each part answers
+  as a well-behaved merchant does until an event says otherwise: the x402
+  resource asks for payment, then hands over what was paid for, and the
+  facilitator verifies and settles. A running sandbox lists every protocol,
+  stage, preset and parameter at `/_sandbox/protocols`
+  (`sandbox.protocol_catalogue()` in Python). Answer from that list, and
+  never invent a preset.
+- **Options**, for each part the agent meets:
+  - **Paid** (default): asked for payment, it answers HTTP 402 with the
+    price; paid, it hands over what was paid for, with a receipt. One
+    purchase after another needs `repeat: cycle`.
+  - **Payment required at the user's price**: the same, with the price as
+    `amount`, in the token's smallest unit.
+  - **A reply the agent cannot read**: a 402 whose payment request cannot
+    be read (`malformed_challenge`), what was paid for with a receipt that
+    cannot be read (`malformed_receipt`), or a body that is not valid JSON
+    (`malformed_response`).
+  - **A timeout**: the merchant holds the connection and closes it with no
+    reply (transport `timeout` with `milliseconds`, 10000 for 10 seconds,
+    at most 60000), answers late (`delay`, with `milliseconds` too), or
+    drops the reply after accepting the request (`drop_after_accept`).
+  - **Retries**: whatever the agent does after a timeout. A retry with the
+    same signed payment is recorded as the same payment, not a second one,
+    and gets the reply the timed-out call was given, so the body goes on
+    that behavior; the next behavior answers only a retry with a new
+    payment, which is a second payment.
+- **Becomes**: `version: axorum.sandbox-world.v2`, and one `protocol` event
+  per change: the `protocol`, the `stage`, and its `behaviors` in the order
+  requests meet them. Each behavior is a `preset`, its `parameters`, an
+  optional `transport`, and a `match` on whether the request carries a
+  payment (`payment_present`). `repeat` says what happens once the list runs
+  out: `last` (the default) keeps the last behavior, `cycle` starts over, and
+  `once` refuses every later request.
+- **Watch for**: a request that does not match the next behavior's `match`
+  is answered `400 unmatched_request` and uses nothing up, so an agent that
+  pays before it is asked meets that. A new event for a stage replaces that
+  stage's whole list. Under `serve`, point the agent at the sandbox in place
+  of the merchant: the x402 resource is
+  `http://127.0.0.1:<port>/_sandbox/rails/x402/resource`, and its
+  facilitator is `.../verify` and `.../settle` beside it. `run.py` sends no
+  requests, so it shows each event applied and nothing more; the exchanges
+  appear once the agent runs against `serve`, and `save-run` records them.
+
+## 10. The timeline
 
 - **Ask**: "What changes during the run, and on which day? A vendor
   suspended, a period closed, the clock moving on to see what comes due?"
@@ -159,10 +215,11 @@ Mark an answer the user did not give, but the skill chose as the default,
   against a world that changes, as the books do.
 - **Options**: nothing changes (default); a master-data change on a day; an
   `advance` that moves the clock so duties come due and breach; a policy
-  change on a day, so agents re-pin and the new rules decide.
+  change on a day, so agents re-pin and the new rules decide; a merchant
+  that starts to misbehave on a day (topic 9).
 - **Becomes**: `events`, in time order, each `at` a span from the start
   (`2d`, `31d`, `1d12h`) with exactly one of `master_data`, `rail`,
-  `advance` or `policy`. A master-data event replaces that kind's whole list,
+  `advance`, `policy` or `protocol`. A master-data event replaces that kind's whole list,
   so copy the entries that stay. A `policy` event names a `file` beside the
   world or holds its `source`; a world to publish holds its `source`, as the
   console keeps no file beside the world.
@@ -170,7 +227,7 @@ Mark an answer the user did not give, but the skill chose as the default,
   and February 1st is `31d`. Under `serve`, an event fires only once the
   agent's test moves the clock to it.
 
-## 10. The seed
+## 11. The seed
 
 - **Ask**: "Should every run of this world be identical?"
 - **Why**: every key and token of a run derives from the seed, so one world
