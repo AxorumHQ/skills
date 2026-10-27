@@ -10,7 +10,7 @@
       "name": "axorum",
       "source": "./",
       "description": "Three skills: axorum-policy (write and prove a policy), axorum-world (build a sandbox world), and axorum (judgment for agents that move money through an Axorum ledger).",
-      "version": "0.4.2",
+      "version": "0.5.0",
       "author": {
         "name": "Axorum, Inc.",
         "url": "https://axorum.com"
